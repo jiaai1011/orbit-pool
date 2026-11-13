@@ -1,0 +1,20 @@
+Audio source credits — 一杆入袋
+
+1. billiard ball clack — Za-Games
+   https://freesound.org/people/Za-Games/sounds/539854/
+   License: CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+   Downloaded HQ preview: https://cdn.freesound.org/previews/539/539854_12029332-hq.mp3
+   Used in hit1/2/3.wav and legacy hit.wav. Trimmed, filtered, level-adjusted;
+   three subtle playback-speed variants are baked into the files.
+
+2. Pool_Table_Ball_Hit.WAV — AmberdeMeillon
+   https://freesound.org/people/AmberdeMeillon/sounds/443067/
+   License: CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/
+   Downloaded HQ preview: https://cdn.freesound.org/previews/443/443067_8282799-hq.mp3
+   Recorded cue impact and pocket sequence, cropped and filtered into cue.wav
+   and pocket.wav. rail.wav is a damped, filtered derivative of the cue impact,
+   not a separately recorded cushion sample.
+
+Downloaded 2026-11-12. Source MP3s preserved in source/ (excluded from app package).
+All processing is reproducible with tools/build_audio.py. No synthesized pitched
+sine-wave or glass-like ringing has been added to the game sound effects.
