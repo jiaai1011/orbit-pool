@@ -56,7 +56,7 @@ Page({
    scene==='spin'?[fresh(0,90,92),fresh(1,153,92),fresh(3,282,43),fresh(8,275,146)]:
    [fresh(0,73,92),fresh(2,140,92),fresh(1,246,92)]
   g.angle=scene==='line'?Math.atan2(48-126,250-90):0
-  Object.assign(g,{sunk:0,shots:0,fouls:0,complete:false,ready:true,placing:false,placeValid:true,power:0,drag:null,spinX:0,spinY:0,special:'normal',panel:null,potted:[],falls:[],effects:[],impacts:[],snapshot:null,strikeUntil:0,toast:null,lag:0,previewPath:null})
+  Object.assign(g,{sunk:0,shots:0,fouls:0,complete:false,ready:true,placing:false,placeValid:true,canPlace:null,spinOpen:false,power:0,drag:null,spinX:0,spinY:0,special:'normal',panel:null,potted:[],falls:[],effects:[],impacts:[],snapshot:null,strikeUntil:0,toast:null,lag:0,previewPath:null})
   g.match=scene==='rack'?Rules.create():null;g.calledPocket=null;g.lastPower=0;g.powerFraction=0
   g.placementKind=null
   g.status=g.match?'玩家 1 开球 · 开球不分组':'拖球台瞄准 · 左侧下拉出杆'
@@ -65,9 +65,15 @@ Page({
  },
  isOpening(){const g=this.g;return g.shots===0&&!!(g.match?g.match.breaking:g.scenario==='practice')},
  beginPlacement(kind){
-  const g=this.g;g.placing=true;g.placementKind=kind;g.power=0;g.powerFraction=0;g.drag=null;g.prediction=null;g.previewPath=null
+  const g=this.g;g.placing=true;g.placementKind=kind;g.canPlace=kind;g.spinOpen=false;g.power=0;g.powerFraction=0;g.drag=null;g.prediction=null;g.previewPath=null
   this.movePlace({x:this.L.tx+g.balls[0].x*this.L.s,y:this.L.ty+g.balls[0].y*this.L.s})
   g.status=kind==='break'?'开球：在左侧开球线后摆放白球':'自由球：全台摆放白球'
+ },
+ commitPlace(){
+  const g=this.g
+  if(!g.placing)return true
+  if(!g.placeValid){this.notify('位置重叠或靠近袋口，请拖到空位');return false}
+  g.placing=false;g.placementKind=null;g.status='白球已摆好 · 点球台瞄准，直接拉杆';this.preview(true);return true
  },
  spinLabel(){
   const g=this.g,lr=Math.abs(g.spinX)<.12?'':g.spinX<0?'左塞':'右塞',ud=Math.abs(g.spinY)<.12?'':g.spinY>0?'高杆':'低杆'
@@ -125,10 +131,10 @@ Page({
   if(!g.ready||g.placing||g.complete||g.power<.5)return
   if(g.match&&!g.match.breaking&&g.match.groups[g.match.turn]&&!Rules.remaining(g.balls,g.match.groups[g.match.turn]).length&&g.calledPocket===null){this.notify('打黑八前，先点一个袋口指定目标');return}
   g.shot=g.match?Rules.start(g.match,g.balls,g.calledPocket):null
-  g.snapshot={balls:clone(g.balls),sunk:g.sunk,shots:g.shots,fouls:g.fouls,potted:g.potted.slice(),angle:g.angle}
-  g.strikeOrigin={x:g.balls[0].x,y:g.balls[0].y,angle:g.angle};g.lastPower=g.power;g.shotPower=g.power;g.strikeUntil=Date.now()+110;g.shotPotted=[];g.scratch=false;g.lag=0
+  g.snapshot={balls:clone(g.balls),sunk:g.sunk,shots:g.shots,fouls:g.fouls,potted:g.potted.slice(),angle:g.angle,canPlace:g.canPlace}
+  g.strikeOrigin={x:g.balls[0].x,y:g.balls[0].y,angle:g.angle,spinX:g.spinX,spinY:g.spinY,special:g.special};g.lastPower=g.power;g.shotPower=g.power;g.strikeUntil=Date.now()+110;g.shotPotted=[];g.scratch=false;g.lag=0
   P.shoot(g.balls[0],g.angle,g.power/100,this.shotMode(),1)
-  g.ready=false;g.shots++;g.status='';g.panel=null
+  g.ready=false;g.shots++;g.status='';g.panel=null;g.spinOpen=false;g.canPlace=null
   this.play('cue',.3+g.power/150);g.power=0
  },
  finish(){
@@ -162,7 +168,9 @@ Page({
   const g=this.g,L=this.L
   const hit=(g.hits||[]).slice().reverse().find(b=>p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)
   if(hit){
-   if(hit.id==='spinpad'){g.drag={kind:'spin',hit};this.moveSpin(p);return}
+   if(hit.id==='spinpad'&&g.ready&&!g.placing){g.drag={kind:'spin',hit};this.moveSpin(p);return}
+   if(hit.id==='spinDock')return
+   if(['power','fine'].includes(hit.id)&&g.ready&&!g.panel){if(!this.commitPlace())return;g.spinOpen=false}
    if(hit.id==='fine'&&g.ready&&!g.placing&&!g.panel){g.drag={kind:'fine',y:p.y,angle:g.angle};return}
    if(hit.id==='power'&&g.ready&&!g.placing&&!g.panel){
     g.drag={kind:'power',x:p.x,y:p.y,lastY:p.y,fraction:0,precision:false};g.power=0;g.powerFraction=0;return
@@ -177,7 +185,11 @@ Page({
    const pocket=P.pockets.findIndex(t=>Math.hypot(t[0]-x,t[1]-y)<15)
    if(pocket>=0){g.calledPocket=pocket;this.notify('已指定 '+(pocket+1)+' 号袋 · 可出杆');return}
   }
+  g.spinOpen=false
   if(g.placing){g.drag={kind:'place'};this.movePlace(p);return}
+  if(g.canPlace&&Math.hypot(x-g.balls[0].x,y-g.balls[0].y)<Math.max(10,18/L.s)){
+   g.placing=true;g.placementKind=g.canPlace;g.drag={kind:'place'};this.movePlace(p);return
+  }
   const b=g.balls[0],dx=x-b.x,dy=y-b.y,along=dx*Math.cos(g.angle)+dy*Math.sin(g.angle),cross=dx*Math.sin(g.angle)-dy*Math.cos(g.angle)
   if(along<-12&&along>-140&&Math.abs(cross)<7){
    g.drag={kind:'cue',x:p.x,y:p.y};return
@@ -207,7 +219,9 @@ Page({
   if(d.kind==='power'||d.kind==='cue'){
    if(d.kind==='power'&&p)this.movePower(p)
    if(g.power>=.5)this.fire();g.power=0;g.powerFraction=0
-  }else if(d.kind==='button'&&p&&Math.hypot(p.x-d.x,p.y-d.y)<18)this.action(d.id)
+  }else if(d.kind==='place'){if(p)this.movePlace(p);this.commitPlace()}
+  else if(d.kind==='spin'){if(p)this.moveSpin(p);g.spinOpen=false;if(g.panel==='spin')g.panel=null;g.status=this.spinLabel()+' · 点球台瞄准，直接拉杆'}
+  else if(d.kind==='button'&&p&&Math.hypot(p.x-d.x,p.y-d.y)<18)this.action(d.id)
   g.drag=null
   if(g.ready)this.preview(true)
  },
@@ -242,7 +256,7 @@ Page({
  },
  action(id){
   const g=this.g
-  if(id==='close'){g.panel=g.complete?'menu':null;return}
+  if(id==='close'){g.panel=g.complete?'menu':null;g.spinOpen=false;return}
   if(id==='sound'){g.sound=!g.sound;if(!g.sound&&this.audio)this.audio.stop();this.saveOptions();return}
   if(id==='assist'){g.assist=!g.assist;this.saveOptions();return}
   if(id==='help'){g.panel='help';return}
@@ -269,15 +283,11 @@ Page({
    if(g.ready&&!g.complete&&this.isOpening())this.beginPlacement('break')
    return
   }
-  if(id==='place'){
-   if(!g.ready||!g.placing)return
-   if(!g.placeValid){this.notify('白球不能与其他球重叠或贴近袋口');return}
-   g.placing=false;g.placementKind=null;g.status=(g.match?'玩家 '+(g.match.turn+1)+' · ':'')+'白球已摆好 · 继续出杆';this.preview();return
-  }
+  if(id==='place'){if(g.ready)this.commitPlace();return}
+  if(id==='spin'){if(g.ready&&!g.complete&&this.commitPlace()){g.panel=null;g.spinOpen=!g.spinOpen}return}
   if(!g.ready||g.placing)return
-  if(id==='spin'){g.panel='spin';return}
-  if(id==='center'){g.spinX=g.spinY=0;g.special='normal'}
-  if(['normal','masse','jump'].includes(id))g.special=id
+  if(id==='center'){g.spinX=g.spinY=0;g.special='normal';g.spinOpen=false}
+  if(['normal','masse','jump'].includes(id)){g.special=id;g.spinOpen=false}
   this.preview()
  },
  saveOptions(){try{wx.setStorageSync('poolOptions',{sound:this.g.sound,assist:this.g.assist,cueStyle:this.g.cueStyle})}catch(e){}}
