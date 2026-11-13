@@ -1,6 +1,7 @@
 const P=require('../../physics')
 const renderCaches=new WeakMap()
 const Rules=require('../../rules')
+const Challenge=require('../../challenge')
 const cueColors=['#55edff','#bd8aff','#ffbe58']
 const cueNames=['极光 · 磁轨 MK–I','幻影 · 双翼 MK–II','曜金 · 重装 MK–III']
 const colors=['#fff9df','#ffc52f','#347cf0','#ec4f4b','#9953d7','#ef8b27','#2ba687','#9b364a','#141822']
@@ -138,6 +139,7 @@ function table(c,g,L){
   text(c,'开球区',P.HEAD_LINE/2,24,8,'#b5fce2','center',600)
   text(c,'开球线',P.HEAD_LINE+4,14,6,'#b5fce2');c.restore()
  }
+ if(g.challenge)challengeTargets(c,g)
  if(g.ready&&!g.placing&&!g.complete)guides(c,g)
  if(g.match&&!g.match.breaking&&g.match.groups[g.match.turn]&&!Rules.remaining(g.balls,g.match.groups[g.match.turn]).length&&!g.complete){
   P.pockets.forEach(([x,y],i)=>{const active=g.calledPocket===i;c.lineWidth=active?2:1;circle(c,x,y,P.POCKET_R+4,null,active?'#ffda76':'#66d9f0');text(c,String(i+1),x,y,7,active?'#ffda76':'#b5e9f6','center',700)});c.lineWidth=1
@@ -157,6 +159,16 @@ function table(c,g,L){
    c.save();c.globalAlpha=1-t;circle(c,e.x,e.y,7+t*15,null,'#c5ffe7');text(c,'+'+1,e.x,e.y-10-t*15,8,'#e7ffe7','center',700);c.restore()
  }
  c.restore()
+}
+function challengeTargets(c,g){
+ const state=g.challenge,l=state.level,target=l.order[state.index]
+ if(l.zone){const z=l.zone;c.save();c.setLineDash([2,2]);circle(c,z.x,z.y,z.r,'#7cffb71d','#8effb6');c.setLineDash([]);text(c,'白球停区',z.x,z.y,6,'#b9ffd3','center',600);c.restore()}
+ if(!g.complete){
+  const b=g.balls.find(b=>b.n===target&&!b.dead)
+  if(b){circle(c,b.x,b.y,P.R+3,null,'#f4d178');text(c,'目标 '+target,b.x,Math.max(13,b.y-13),6,'#ffe6a5','center',600)}
+  const pocket=l.pockets&&l.pockets[target]
+  if(pocket!=null){const [x,y]=P.pockets[pocket];c.save();c.lineWidth=1.8;circle(c,x,y,P.POCKET_R+3,null,'#ffd080');text(c,'目标袋',x,y,6,'#ffe2a4','center',700);c.restore()}
+ }
 }
 function arrow(c,x,y,a,len,col){
  const X=x+Math.cos(a)*len,Y=y+Math.sin(a)*len
@@ -279,9 +291,10 @@ function spinFront(c,g,cx,cy,r){
  line(c,x+3*k,y+6*k,x,y,'#d5eff3',3.5*k);circle(c,x,y,Math.max(2,r*.11),'#ff8658','#fff7de')
  c.restore()
 }
+function controlBounds(L){return {left:Math.min(L.left,Math.max(L.power.x,(L.w-650)/2)),right:Math.max(L.right,Math.min(L.fine.x+L.fine.w,(L.w+650)/2))}}
 function spinDock(c,g,L){
  if(!g.spinOpen||g.panel||!g.ready||g.placing||g.complete)return
- const w=238,h=174,x=Math.max(12,L.right-w),y=L.h-55-h
+ const w=238,h=174,x=Math.max(12,controlBounds(L).right-w),y=L.h-55-h
  rr(c,x,y,w,h,13,'#081b2af5','#638a9e')
  g.hits.push({id:'spinDock',x,y,w,h})
  text(c,'击球点 · 杆头视角',x+14,y+18,12,'#e7f7ff','left',600)
@@ -300,7 +313,13 @@ function spinDock(c,g,L){
 function chrome(c,g,L){
  const {w,h,power:p,fine:f}=L
  g.hits=[]
- if(g.match){
+ if(g.challenge){
+  const l=g.challenge.level,ch=Challenge.chapters[l.chapter]
+  text(c,'挑战 / '+String(l.id).padStart(2,'0')+' · '+l.name,w/2,17,14,'#effaff','center',700)
+  text(c,ch.name,L.left,18,11,ch.color,'left',600)
+  text(c,'剩余 '+Math.max(0,l.limit-g.shots)+' 杆',L.right,18,11,'#ffdea2','right',600)
+  text(c,Challenge.objective(l),w/2,37,10,'#a7c8d5','center')
+ }else if(g.match){
   for(let i=0;i<2;i++){
    const x=i===0?L.left:L.right-140,active=g.match.turn===i&&!g.complete,accent=i===0?'#64e5ff':'#c294ff'
    rr(c,x,5,140,40,9,active?'#173347':'#0d1b2a',active?accent:'#2a3b50')
@@ -343,21 +362,22 @@ function chrome(c,g,L){
  }
  c.restore();line(c,f.x+3,f.y+f.h/2,f.x+f.w-3,f.y+f.h/2,'#edcf83',2)
  g.hits.push({id:'fine',...f});c.restore()
- const y=h-43
- button(c,g,'menu','球局',L.left,y,49,29)
- button(c,g,'help','玩法',L.left+56,y,49,29)
- button(c,g,'undo',g.match?'规则':'撤杆',L.left+112,y,49,29)
- button(c,g,'cues','球杆',L.left+168,y,49,29)
- const spinX=L.right-210
+ const y=h-43,controls=controlBounds(L)
+ button(c,g,'menu','球局',controls.left,y,49,29)
+ button(c,g,g.challenge?'challengeGoal':'help',g.challenge?'目标':'玩法',controls.left+56,y,49,29)
+ button(c,g,'undo',g.challenge?'重试':g.match?'规则':'撤杆',controls.left+112,y,49,29)
+ button(c,g,'cues','球杆',controls.left+168,y,49,29)
+ const spinX=controls.right-210
  rr(c,spinX,y-5,112,35,8,'#172634','#476576')
  spinFront(c,g,spinX+20,y+12,13)
  text(c,g.spinLabel(),spinX+39,y+7,g.spinLabel().length>7?8:10,'#ffdbaf')
  text(c,'点击调整杆法',spinX+39,y+21,7,'#8aaebb')
  g.hits.push({id:'spin',x:spinX,y:y-5,w:112,h:35})
- button(c,g,'sound',g.sound?'声音 开':'声音 关',L.right-91,y,66,29)
+ button(c,g,'sound',g.sound?'声音 开':'声音 关',controls.right-91,y,66,29)
  const msg=g.placing?(g.placementKind==='break'?'开球：在线后拖白球，松手摆好 · 也可直接选杆法或拉杆':'自由球：拖到空位，松手摆好'):g.drag&&g.drag.kind==='power'?(g.drag.precision?'精调 ×0.15 · 松手出杆':'当前力度预演 · 向右移慢调 · 拉回取消'):g.status
  text(c,msg,w/2,h-51,9,g.ready?'#b3c7cd':'#e6cf9a','center')
- if(g.canPlace&&g.ready&&!g.complete)text(c,'拖白球摆位',(L.left+217+L.right-210)/2,y+14,9,'#96d8c8','center')
+ const gap=controls.right-210-(controls.left+217)
+ if(gap>=80)button(c,g,'challenges',g.challenge?'关卡地图':'挑战 50关',controls.left+217+(gap-76)/2,y,76,29,!!g.challenge)
  if(g.toast&&g.now<g.toastUntil){
    const ww=Math.min(w-50,g.toast.length*10+28)
    rr(c,w/2-ww/2,51,ww,31,15,'#0a1b22ec','#749180')
@@ -367,6 +387,7 @@ function chrome(c,g,L){
 function modal(c,g,L){
  const {w,h}=L,kind=g.panel
  if(!kind)return
+ if(['challenges','challengeIntro','challengeResult'].includes(kind)){challengeModal(c,g,L,kind);return}
  c.fillStyle='#020912c9';c.fillRect(0,0,w,h)
  const mw=Math.min(w-40,510),mh=Math.min(h-30,322),x=(w-mw)/2,y=(h-mh)/2
  rr(c,x,y,mw,mh,18,'#142330','#3c5860')
@@ -382,7 +403,7 @@ function modal(c,g,L){
      text(c,title,xx+14,yy+23,14,'#e6d5af','left',600);text(c,sub,xx+14,yy+47,10,'#9bb9c6')
      g.hits.push({id:'scene:'+id,x:xx,y:yy,w:ww,h:69})
    })
-   text(c,g.best?'清台纪录  '+g.best+' 杆':'每一杆，都更靠近一点',x+25,y+mh-27,11,'#8faab6')
+   button(c,g,'challenges','挑战之路 · 50 关 / 五大章节',x+25,y+mh-49,mw-50,32,true)
  }else if(kind==='help'){
    text(c,'三步，上手',x+25,y+31,20,'#eee2c4','left',600)
    const rows=[['01  瞄准','拖白球松手摆好；点球台瞄准，右侧微调。'],['02  拉杆','下拉蓄力，右移进入慢速精调，松手出杆。'],['03  控球','点底部白球，拖红点松手即用；黑八先指定袋口。']]
@@ -428,6 +449,55 @@ function modal(c,g,L){
 
  }
 }
+
+function challengeModal(c,g,L,kind){
+ const {w,h}=L,mw=Math.min(w-32,580),mh=Math.min(h-22,350),x=(w-mw)/2,y=(h-mh)/2
+ c.fillStyle='#020912d9';c.fillRect(0,0,w,h);rr(c,x,y,mw,mh,17,'#0d2031','#53768a');g.hits=[]
+ button(c,g,'close','×',x+mw-39,y+12,26,26)
+ const progress=g.challengeProgress||Challenge.sanitize(null),stats=Challenge.stats(progress)
+ if(kind==='challenges'){
+  text(c,'挑战之路',x+22,y+26,21,'#edfaff','left',700)
+  text(c,stats.cleared+'/50 关  ·  '+stats.stars+'/150 星',x+mw-53,y+26,10,'#efcd87','right',600)
+  const chapter=Math.max(0,Math.min(4,g.challengeChapter||0)),ch=Challenge.chapters[chapter],tabW=(mw-44-24)/5
+  Challenge.chapters.forEach((ch,i)=>button(c,g,'chapter:'+i,(i+1)+' '+ch.name,x+22+i*(tabW+6),y+52,tabW,29,i===chapter))
+  text(c,ch.sub,x+22,y+99,11,ch.color)
+  const cellW=(mw-44-28)/5,gridY=y+119,cellH=Math.min(68,(mh-176)/2)
+  for(let j=0;j<10;j++){
+   const id=chapter*10+j+1,l=Challenge.get(id),record=progress.records[id],locked=id>stats.unlocked,xx=x+22+(j%5)*(cellW+7),yy=gridY+Math.floor(j/5)*(cellH+8)
+   rr(c,xx,yy,cellW,cellH,9,locked?'#0a1826':record?'#163337':'#18364a',locked?'#23394a':record?'#518276':ch.color)
+   text(c,String(id).padStart(2,'0'),xx+11,yy+16,16,locked?'#536b80':'#e9faff','left',700)
+   text(c,locked?'未解锁':record?'★'.repeat(record.stars)+'☆'.repeat(3-record.stars):'待挑战',xx+cellW-8,yy+16,8,locked?'#536b80':'#f4cf83','right')
+   text(c,l.name,xx+cellW/2,yy+39,10,locked?'#50697b':'#b6d7df','center')
+   if(cellH>60&&record)text(c,'最佳 '+record.shots+' 杆',xx+cellW/2,yy+55,8,'#8ebeb5','center')
+   g.hits.push({id:'level:'+id,x:xx,y:yy,w:cellW,h:cellH})
+  }
+  text(c,g.challengeNotice||'逐关解锁 · 已过关可重玩刷星 · 自动保存本机进度',x+22,y+mh-21,10,g.challengeNotice?'#ffb89d':'#83a7ba')
+ }else{
+  const state=g.challenge,l=state.level,ch=Challenge.chapters[l.chapter],result=state.result
+  text(c,'LEVEL '+String(l.id).padStart(2,'0')+' / 50  ·  '+ch.name,x+24,y+27,11,ch.color,'left',600)
+  if(kind==='challengeIntro'){
+   text(c,l.name,w/2,y+76,27,'#edfaff','center',700)
+   text(c,Challenge.objective(l),w/2,y+117,12,'#f0d29c','center',600)
+   text(c,'最多 '+l.limit+' 杆  ·  '+l.par+' 杆内三星  ·  白球落袋即失败',w/2,y+148,11,'#99b6c7','center')
+   // Two lines keep each hint legible on small landscape screens.
+   const tip=l.tip;let lines=tip.length>34?[tip.slice(0,34),tip.slice(34)]:[tip]
+   lines.forEach((t,i)=>text(c,t,w/2,y+187+i*20,11,'#a9d5d3','center'))
+   text(c,'固定球位挑战 · 可瞄准、加塞和微调 · 不可自由摆球',w/2,y+mh-78,10,'#7698ab','center')
+   button(c,g,'challengeGo',g.shots?'继续挑战':'开始挑战',w/2-84,y+mh-59,168,37,true)
+  }else{
+   text(c,result.won?(l.id===50?'50 关 · 全部通关':'挑战成功'):'再试一次',w/2,y+72,27,result.won?'#9ff5d1':'#ffc1a4','center',700)
+   text(c,result.won?'★'.repeat(result.stars)+'☆'.repeat(3-result.stars):'☆ ☆ ☆',w/2,y+116,34,result.won?'#ffd27e':'#536e82','center')
+   text(c,result.reason,w/2,y+158,12,'#bdd4df','center')
+   text(c,'本次 '+g.shots+' 杆  ·  三星目标 '+l.par+' 杆',w/2,y+186,11,'#8cabbf','center')
+   text(c,result.won?(g.challengeSaveFailed?'浏览器存储不可用，本次进度只在当前页面保留':l.id===50?'你已完成挑战之路，可以回看关卡继续刷星。':'第 '+(l.id+1)+' 关已解锁 · 成绩已保存到本机'):'调整瞄准、力度或杆法，无限次重试。',w/2,y+218,11,ch.color,'center')
+   const bw=(mw-64)/3,yy=y+mh-61
+   button(c,g,'challenges','关卡地图',x+22,yy,bw,37)
+   button(c,g,'challengeRetry','再挑战一次',x+32+bw,yy,bw,37,!result.won)
+   button(c,g,result.won&&l.id<50?'challengeNext':'challenges',result.won&&l.id<50?'下一关 →':'查看进度',x+42+bw*2,yy,bw,37,result.won)
+  }
+ }
+}
+
 function background(c,g,L){
  const bg=c.createRadialGradient(L.w*.5,L.h*.45,20,L.w*.5,L.h*.45,L.w*.7)
  bg.addColorStop(0,'#173047');bg.addColorStop(.55,'#0b1627');bg.addColorStop(1,'#030710');c.fillStyle=bg;c.fillRect(0,0,L.w,L.h)

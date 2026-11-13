@@ -89,9 +89,12 @@ const FREE_RUN_MAX=1050
 const RUN_FACTOR=12/(49*SLIDE)+25/(98*ROLL)
 function powerSpeed(p){return Math.sqrt(FREE_RUN_MAX*Math.max(0,Math.min(1,p))/RUN_FACTOR)}
 function shoot(b,a,p,m,flip=1){
-  const power=Math.max(0,Math.min(1,p)),top=Math.max(-1,Math.min(1,m.top||0))*1.8,side=Math.max(-1,Math.min(1,m.side||0))*1.2
-  // Off-centre strikes divide a fixed energy budget into translation and rotation.
-  const v=powerSpeed(power)*(m.breakShot?1+.8*power*power:1)/Math.sqrt(1+.4*(top*top+side*side))*(m.lift?.85:1)
+  const power=Math.max(0,Math.min(1,p)),tipY=Math.max(-1,Math.min(1,m.top||0)),tipX=Math.max(-1,Math.min(1,m.side||0))
+  const top=tipY*1.6,side=tipX*1.2
+  // Power is calibrated to launch speed, not a fixed total kinetic-energy budget.
+  // The old energy split removed 34% of draw speed before cloth drag even began.
+  // Allow a small off-centre loss; cloth friction alone then wears off backspin.
+  const v=powerSpeed(power)*(m.breakShot?1+.8*power*power:1)*(1-.08*Math.min(1,tipY*tipY+tipX*tipX))*(m.lift?.85:1)
   b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;b.ax=Math.cos(a);b.ay=Math.sin(a)
   b.rx=b.ax*v*top;b.ry=b.ay*v*top;b.wz=side*v
   b.side=m.side||0;b.bend=(m.bend||0)*flip;b.age=0;b.z=0
@@ -387,10 +390,1630 @@ function create(makeContext,clock=()=>Date.now()){
 module.exports={create}
 
 };
+factories['levels']=function(module,exports,require){
+// 50 fixed, physics-validated challenge layouts.
+module.exports=[
+  {
+    "name": "第一颗星",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        290.55134026293734,
+        49.38571359080011
+      ],
+      [
+        1,
+        315,
+        32
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "沿瞄准线轻推；白球落袋会失败。",
+    "id": 1,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "轻推入袋",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        283.02169680078094,
+        128.31356789843727
+      ],
+      [
+        1,
+        313,
+        150
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "沿瞄准线轻推；白球落袋会失败。",
+    "id": 2,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "直线延伸",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        84.45879976720144,
+        62.05136309427044
+      ],
+      [
+        1,
+        49,
+        36
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "沿瞄准线轻推；白球落袋会失败。",
+    "id": 3,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "跨过半台",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        91.89602420828336,
+        115.52845255069082
+      ],
+      [
+        1,
+        51,
+        146
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "沿瞄准线轻推；白球落袋会失败。",
+    "id": 4,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "切入角度",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        270.3435397752626,
+        87.71062694822028
+      ],
+      [
+        1,
+        307,
+        40
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 5,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "反向薄球",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        264.2645369552827,
+        88.2447951307739
+      ],
+      [
+        1,
+        305,
+        142
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 6,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "中袋准星",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        200,
+        120
+      ],
+      [
+        1,
+        180,
+        48
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 1
+    },
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 7,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "长台定点",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        107.77488003713722,
+        111.9242829112526
+      ],
+      [
+        1,
+        59,
+        46
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 0
+    },
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 8,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "贴近库边",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        216.57371808574968,
+        101.67933494536373
+      ],
+      [
+        1,
+        299,
+        136
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 5
+    },
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 9,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "准度毕业",
+    "kind": "pot",
+    "balls": [
+      [
+        0,
+        207.99102766762508,
+        87.44866946013593
+      ],
+      [
+        1,
+        297,
+        50
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "瞄准目标球的接触点，用右侧滚轮细调。",
+    "id": 10,
+    "chapter": 0,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "停在光圈",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        239.1223308158691,
+        70.05410373171222
+      ],
+      [
+        1,
+        272,
+        51
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 267.4,
+      "y": 53.7,
+      "r": 23
+    },
+    "tip": "控制力度，让进球后的白球留在光圈内。",
+    "id": 11,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "轻柔留位",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        210.0347666810073,
+        108.6551484774143
+      ],
+      [
+        1,
+        256.5,
+        132
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 258.8,
+      "y": 133.1,
+      "r": 23
+    },
+    "tip": "控制力度，让进球后的白球留在光圈内。",
+    "id": 12,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "高杆跟进",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        180.70934865210978,
+        79.85213883561498
+      ],
+      [
+        1,
+        241,
+        53
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 262.3,
+      "y": 43.5,
+      "r": 23
+    },
+    "tip": "可尝试高杆，让白球碰球后继续向前。",
+    "id": 13,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "直线追球",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        234.68283745557926,
+        110.8418726767706
+      ],
+      [
+        1,
+        267.5,
+        130
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 290.1,
+      "y": 143.2,
+      "r": 23
+    },
+    "tip": "可尝试高杆，让白球碰球后继续向前。",
+    "id": 14,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "低杆回拉",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        205.66267234908736,
+        78.59771315555737
+      ],
+      [
+        1,
+        252,
+        55
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 207.7,
+      "y": 77.6,
+      "r": 19
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 15,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "拉回半步",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        176.39083523978698,
+        100.74402245690746
+      ],
+      [
+        1,
+        236.5,
+        128
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 188.3,
+      "y": 106.1,
+      "r": 19
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 16,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "低杆左塞",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        230.23782051683253,
+        76.25200237670667
+      ],
+      [
+        1,
+        263,
+        57
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 201.8,
+      "y": 93,
+      "r": 19
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 17,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "低杆右塞",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        201.2809279781508,
+        102.1715006465133
+      ],
+      [
+        1,
+        247.5,
+        126
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 204.5,
+      "y": 103.8,
+      "r": 19
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 18,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "远距回拉",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        132.10163735425755,
+        105.04690153202192
+      ],
+      [
+        1,
+        232,
+        59
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 174.2,
+      "y": 85.6,
+      "r": 15
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 19,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "控球毕业",
+    "kind": "zone",
+    "balls": [
+      [
+        0,
+        185.32842201231307,
+        80.74586522895353
+      ],
+      [
+        1,
+        258.5,
+        124
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "zone": {
+      "x": 205.1,
+      "y": 92.4,
+      "r": 15
+    },
+    "tip": "可尝试低杆；距离越远，越需要保留倒旋的出杆力度。",
+    "id": 20,
+    "chapter": 1,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "第一次翻袋",
+    "kind": "bank",
+    "balls": [
+      [
+        0,
+        100,
+        100
+      ],
+      [
+        1,
+        190,
+        64
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "让目标球先撞库边，再反弹进金色目标袋；直接进袋不算。",
+    "id": 21,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "反向折返",
+    "kind": "bank",
+    "balls": [
+      [
+        0,
+        260,
+        90
+      ],
+      [
+        1,
+        170,
+        124
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 0
+    },
+    "tip": "让目标球先撞库边，再反弹进金色目标袋；直接进袋不算。",
+    "id": 22,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "斜线翻袋",
+    "kind": "bank",
+    "balls": [
+      [
+        0,
+        90,
+        150
+      ],
+      [
+        1,
+        155,
+        90
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "让目标球先撞库边，再反弹进金色目标袋；直接进袋不算。",
+    "id": 23,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "长库折射",
+    "kind": "bank",
+    "balls": [
+      [
+        0,
+        270,
+        40
+      ],
+      [
+        1,
+        215,
+        100
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 0
+    },
+    "tip": "让目标球先撞库边，再反弹进金色目标袋；直接进袋不算。",
+    "id": 24,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "翻袋毕业",
+    "kind": "bank",
+    "balls": [
+      [
+        0,
+        65,
+        90
+      ],
+      [
+        1,
+        150,
+        60
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "让目标球先撞库边，再反弹进金色目标袋；直接进袋不算。",
+    "id": 25,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "先借一库",
+    "kind": "kick",
+    "balls": [
+      [
+        0,
+        100,
+        100
+      ],
+      [
+        1,
+        300,
+        40
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "白球先碰库，再碰目标球。看反射角，用力度控制第二段路程。",
+    "id": 26,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "绕路进球",
+    "kind": "kick",
+    "balls": [
+      [
+        0,
+        250,
+        100
+      ],
+      [
+        1,
+        50,
+        140
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 0
+    },
+    "tip": "白球先碰库，再碰目标球。看反射角，用力度控制第二段路程。",
+    "id": 27,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "对侧解球",
+    "kind": "kick",
+    "balls": [
+      [
+        0,
+        100,
+        75
+      ],
+      [
+        1,
+        290,
+        135
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "白球先碰库，再碰目标球。看反射角，用力度控制第二段路程。",
+    "id": 28,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "远台借库",
+    "kind": "kick",
+    "balls": [
+      [
+        0,
+        260,
+        75
+      ],
+      [
+        1,
+        60,
+        40
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 0
+    },
+    "tip": "白球先碰库，再碰目标球。看反射角，用力度控制第二段路程。",
+    "id": 29,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "折线毕业",
+    "kind": "kick",
+    "balls": [
+      [
+        0,
+        140,
+        120
+      ],
+      [
+        1,
+        270,
+        55
+      ]
+    ],
+    "order": [
+      1
+    ],
+    "pockets": {
+      "1": 2
+    },
+    "tip": "白球先碰库，再碰目标球。看反射角，用力度控制第二段路程。",
+    "id": 30,
+    "chapter": 2,
+    "par": 1,
+    "limit": 3
+  },
+  {
+    "name": "双球接力",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        110,
+        80
+      ],
+      [
+        1,
+        311,
+        29
+      ],
+      [
+        2,
+        43,
+        141
+      ]
+    ],
+    "order": [
+      1,
+      2
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 31,
+    "chapter": 3,
+    "par": 2,
+    "limit": 4
+  },
+  {
+    "name": "两端奔袭",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        140,
+        92
+      ],
+      [
+        1,
+        47,
+        147
+      ],
+      [
+        2,
+        306,
+        149
+      ]
+    ],
+    "order": [
+      1,
+      2
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 32,
+    "chapter": 3,
+    "par": 2,
+    "limit": 4
+  },
+  {
+    "name": "换边走位",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        170,
+        104
+      ],
+      [
+        1,
+        310,
+        143
+      ],
+      [
+        2,
+        49,
+        34
+      ]
+    ],
+    "order": [
+      1,
+      2
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 33,
+    "chapter": 3,
+    "par": 2,
+    "limit": 4
+  },
+  {
+    "name": "先近后远",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        200,
+        80
+      ],
+      [
+        1,
+        41,
+        40
+      ],
+      [
+        2,
+        176,
+        33
+      ]
+    ],
+    "order": [
+      1,
+      2
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 34,
+    "chapter": 3,
+    "par": 2,
+    "limit": 4
+  },
+  {
+    "name": "双球毕业",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        110,
+        92
+      ],
+      [
+        1,
+        180,
+        27
+      ],
+      [
+        2,
+        315,
+        29
+      ]
+    ],
+    "order": [
+      1,
+      2
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 35,
+    "chapter": 3,
+    "par": 2,
+    "limit": 4
+  },
+  {
+    "name": "三球连线",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        140,
+        104
+      ],
+      [
+        1,
+        319,
+        35
+      ],
+      [
+        2,
+        51,
+        147
+      ],
+      [
+        3,
+        310,
+        149
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 36,
+    "chapter": 3,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "绕台一圈",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        170,
+        80
+      ],
+      [
+        1,
+        43,
+        141
+      ],
+      [
+        2,
+        302,
+        143
+      ],
+      [
+        3,
+        41,
+        34
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 37,
+    "chapter": 3,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "留住角度",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        200,
+        92
+      ],
+      [
+        1,
+        306,
+        149
+      ],
+      [
+        2,
+        45,
+        40
+      ],
+      [
+        3,
+        180,
+        33
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 38,
+    "chapter": 3,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "顺序思考",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        110,
+        104
+      ],
+      [
+        1,
+        49,
+        34
+      ],
+      [
+        2,
+        184,
+        27
+      ],
+      [
+        3,
+        319,
+        29
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 39,
+    "chapter": 3,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "清台毕业",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        140,
+        80
+      ],
+      [
+        1,
+        176,
+        33
+      ],
+      [
+        2,
+        311,
+        35
+      ],
+      [
+        3,
+        43,
+        147
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3
+    ],
+    "tip": "先碰并打进高亮目标球，再继续下一颗；提前进后面的球会失败。",
+    "id": 40,
+    "chapter": 3,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "黑八初试",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        170,
+        92
+      ],
+      [
+        1,
+        315,
+        29
+      ],
+      [
+        2,
+        47,
+        141
+      ],
+      [
+        8,
+        306,
+        143
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      8
+    ],
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 41,
+    "chapter": 4,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "两翼收官",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        200,
+        104
+      ],
+      [
+        1,
+        51,
+        147
+      ],
+      [
+        2,
+        310,
+        149
+      ],
+      [
+        8,
+        49,
+        40
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      8
+    ],
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 42,
+    "chapter": 4,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "三角残局",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        110,
+        80
+      ],
+      [
+        1,
+        302,
+        143
+      ],
+      [
+        2,
+        41,
+        34
+      ],
+      [
+        8,
+        176,
+        27
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      8
+    ],
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 43,
+    "chapter": 4,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "反向收尾",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        140,
+        92
+      ],
+      [
+        1,
+        45,
+        40
+      ],
+      [
+        2,
+        180,
+        33
+      ],
+      [
+        8,
+        315,
+        35
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      8
+    ],
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 44,
+    "chapter": 4,
+    "par": 3,
+    "limit": 5
+  },
+  {
+    "name": "四球接力",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        170,
+        104
+      ],
+      [
+        1,
+        184,
+        27
+      ],
+      [
+        2,
+        319,
+        29
+      ],
+      [
+        3,
+        51,
+        141
+      ],
+      [
+        8,
+        310,
+        143
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      8
+    ],
+    "pockets": {
+      "8": 5
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 45,
+    "chapter": 4,
+    "par": 4,
+    "limit": 6
+  },
+  {
+    "name": "精准衔接",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        200,
+        80
+      ],
+      [
+        1,
+        311,
+        35
+      ],
+      [
+        2,
+        43,
+        147
+      ],
+      [
+        3,
+        302,
+        149
+      ],
+      [
+        8,
+        41,
+        40
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      8
+    ],
+    "pockets": {
+      "8": 0
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 46,
+    "chapter": 4,
+    "par": 4,
+    "limit": 6
+  },
+  {
+    "name": "转台控球",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        110,
+        92
+      ],
+      [
+        1,
+        47,
+        141
+      ],
+      [
+        2,
+        306,
+        143
+      ],
+      [
+        3,
+        45,
+        34
+      ],
+      [
+        8,
+        180,
+        27
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      8
+    ],
+    "pockets": {
+      "8": 2
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 47,
+    "chapter": 4,
+    "par": 4,
+    "limit": 6
+  },
+  {
+    "name": "终点黑八",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        140,
+        104
+      ],
+      [
+        1,
+        310,
+        149
+      ],
+      [
+        2,
+        49,
+        40
+      ],
+      [
+        3,
+        184,
+        33
+      ],
+      [
+        8,
+        319,
+        35
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      8
+    ],
+    "pockets": {
+      "8": 0
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 48,
+    "chapter": 4,
+    "par": 4,
+    "limit": 6
+  },
+  {
+    "name": "五球连奏",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        170,
+        80
+      ],
+      [
+        1,
+        41,
+        34
+      ],
+      [
+        2,
+        176,
+        27
+      ],
+      [
+        3,
+        311,
+        29
+      ],
+      [
+        4,
+        43,
+        141
+      ],
+      [
+        8,
+        302,
+        143
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      4,
+      8
+    ],
+    "pockets": {
+      "8": 5
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 49,
+    "chapter": 4,
+    "par": 5,
+    "limit": 7
+  },
+  {
+    "name": "轨道大师",
+    "kind": "order",
+    "balls": [
+      [
+        0,
+        200,
+        92
+      ],
+      [
+        1,
+        180,
+        33
+      ],
+      [
+        2,
+        315,
+        35
+      ],
+      [
+        3,
+        47,
+        147
+      ],
+      [
+        4,
+        306,
+        149
+      ],
+      [
+        8,
+        45,
+        40
+      ]
+    ],
+    "order": [
+      1,
+      2,
+      3,
+      4,
+      8
+    ],
+    "pockets": {
+      "8": 0
+    },
+    "tip": "按编号顺序进球，最后打黑八；有金色目标袋时，黑八必须进该袋。",
+    "id": 50,
+    "chapter": 4,
+    "par": 5,
+    "limit": 7
+  }
+]
+
+};
+factories['challenge']=function(module,exports,require){
+const levels=require('levels')
+const chapters=[{name:'初见球感',sub:'直球 · 薄球 · 指定袋',color:'#6ce8ec'},{name:'白球走位',sub:'停球 · 高低杆 · 落区控制',color:'#9ee8ae'},{name:'折线思维',sub:'目标球翻袋 · 白球一库解球',color:'#e8be77'},{name:'连贯清台',sub:'按序进球 · 留好下一杆',color:'#c3a0ff'},{name:'大师试炼',sub:'多球残局 · 黑八收官',color:'#ff9b92'}]
+const fresh=([n,x,y])=>({n,x,y,vx:0,vy:0,rx:0,ry:0,wz:0,z:0,vz:0,side:0,dead:false})
+function get(id){return levels[id-1]||null}
+function create(id){const level=get(id);return level?{level,index:0,shot:null,result:null}:null}
+function start(state){state.shot={first:null,cueRails:0,kick:false,rails:{},error:null,pots:[]};return state.shot}
+function record(state,e){
+ const s=state.shot,l=state.level;if(!s)return
+ const expected=l.order[state.index]
+ if(e.type==='rail'){s.rails[e.n]=(s.rails[e.n]||0)+1;if(e.n===0&&s.first===null)s.cueRails++}
+ if(e.type==='contact'&&s.first===null&&(e.a===0||e.b===0)){
+  s.first=e.a===0?e.b:e.a;s.kick=s.cueRails>0
+  if(s.first!==expected)s.error='先碰了 '+s.first+' 号球，应先碰 '+expected+' 号球'
+ }
+ if(e.type==='pocket'){
+  s.pots.push(e.n)
+  if(e.n===0){s.error='白球落袋，本次挑战失败';return}
+  if(e.n!==expected){s.error='进球顺序错误：下一颗应为 '+expected+' 号球';return}
+  const pocket=l.pockets&&l.pockets[e.n]
+  if(pocket!=null&&pocket!==e.pocket)s.error=e.n+' 号球进错袋，请打入金色目标袋'
+  if(l.kind==='bank'&&!(s.rails[e.n]>0))s.error='目标球需要先碰库，再进袋'
+  if(l.kind==='kick'&&!s.kick)s.error='白球需要先碰库，再碰目标球'
+  state.index++
+ }
+}
+function finish(state,balls,shots){
+ const l=state.level,s=state.shot||{},cue=balls[0]
+ let reason=s.error
+ if(cue.dead)reason='白球落袋，本次挑战失败'
+ const all=state.index>=l.order.length
+ if(!reason&&all&&l.zone&&Math.hypot(cue.x-l.zone.x,cue.y-l.zone.y)>l.zone.r)reason='球已进袋，但白球未停进绿色目标区'
+ if(reason)return {won:false,reason,stars:0}
+ if(all)return {won:true,reason:'目标全部完成',stars:shots<=l.par?3:shots<=l.par+1?2:1}
+ if(shots>=l.limit)return {won:false,reason:'杆数用完，还有 '+(l.order.length-state.index)+' 颗目标球',stars:0}
+ return null
+}
+function sanitize(raw){const out={records:{}};if(raw&&raw.records&&typeof raw.records==='object')for(let id=1;id<=50;id++){const r=raw.records[id];if(r&&Number.isInteger(r.stars)&&r.stars>=1&&r.stars<=3&&Number.isInteger(r.shots)&&r.shots>=1&&r.shots<=get(id).limit)out.records[id]={stars:r.stars,shots:r.shots}}return out}
+function unlocked(progress){let n=1;while(n<50&&progress.records[n])n++;return n}
+function save(progress,id,result,shots){if(!result.won)return progress;const p=sanitize(progress),old=p.records[id];p.records[id]={stars:Math.max(old?old.stars:0,result.stars),shots:Math.min(old?old.shots:Infinity,shots)};return p}
+function stats(p){const rows=Object.values(p.records);return {cleared:rows.length,stars:rows.reduce((n,r)=>n+r.stars,0),unlocked:unlocked(p)}}
+function objective(l){const route=l.order.join(' → ');return l.kind==='zone'?'进球，并让白球停进绿色区域':l.kind==='bank'?'目标球至少碰库一次，再进指定袋':l.kind==='kick'?'白球先碰库，再将目标球打进指定袋':l.order.length>1?'按顺序清台：'+route:l.pockets?'将 '+route+' 号球打进金色目标袋':'将 '+route+' 号球打进任意袋'}
+module.exports={levels,chapters,get,create,fresh,start,record,finish,sanitize,unlocked,save,stats,objective}
+
+};
 factories['render']=function(module,exports,require){
 const P=require('physics')
 const renderCaches=new WeakMap()
 const Rules=require('rules')
+const Challenge=require('challenge')
 const cueColors=['#55edff','#bd8aff','#ffbe58']
 const cueNames=['极光 · 磁轨 MK–I','幻影 · 双翼 MK–II','曜金 · 重装 MK–III']
 const colors=['#fff9df','#ffc52f','#347cf0','#ec4f4b','#9953d7','#ef8b27','#2ba687','#9b364a','#141822']
@@ -528,6 +2151,7 @@ function table(c,g,L){
   text(c,'开球区',P.HEAD_LINE/2,24,8,'#b5fce2','center',600)
   text(c,'开球线',P.HEAD_LINE+4,14,6,'#b5fce2');c.restore()
  }
+ if(g.challenge)challengeTargets(c,g)
  if(g.ready&&!g.placing&&!g.complete)guides(c,g)
  if(g.match&&!g.match.breaking&&g.match.groups[g.match.turn]&&!Rules.remaining(g.balls,g.match.groups[g.match.turn]).length&&!g.complete){
   P.pockets.forEach(([x,y],i)=>{const active=g.calledPocket===i;c.lineWidth=active?2:1;circle(c,x,y,P.POCKET_R+4,null,active?'#ffda76':'#66d9f0');text(c,String(i+1),x,y,7,active?'#ffda76':'#b5e9f6','center',700)});c.lineWidth=1
@@ -547,6 +2171,16 @@ function table(c,g,L){
    c.save();c.globalAlpha=1-t;circle(c,e.x,e.y,7+t*15,null,'#c5ffe7');text(c,'+'+1,e.x,e.y-10-t*15,8,'#e7ffe7','center',700);c.restore()
  }
  c.restore()
+}
+function challengeTargets(c,g){
+ const state=g.challenge,l=state.level,target=l.order[state.index]
+ if(l.zone){const z=l.zone;c.save();c.setLineDash([2,2]);circle(c,z.x,z.y,z.r,'#7cffb71d','#8effb6');c.setLineDash([]);text(c,'白球停区',z.x,z.y,6,'#b9ffd3','center',600);c.restore()}
+ if(!g.complete){
+  const b=g.balls.find(b=>b.n===target&&!b.dead)
+  if(b){circle(c,b.x,b.y,P.R+3,null,'#f4d178');text(c,'目标 '+target,b.x,Math.max(13,b.y-13),6,'#ffe6a5','center',600)}
+  const pocket=l.pockets&&l.pockets[target]
+  if(pocket!=null){const [x,y]=P.pockets[pocket];c.save();c.lineWidth=1.8;circle(c,x,y,P.POCKET_R+3,null,'#ffd080');text(c,'目标袋',x,y,6,'#ffe2a4','center',700);c.restore()}
+ }
 }
 function arrow(c,x,y,a,len,col){
  const X=x+Math.cos(a)*len,Y=y+Math.sin(a)*len
@@ -669,9 +2303,10 @@ function spinFront(c,g,cx,cy,r){
  line(c,x+3*k,y+6*k,x,y,'#d5eff3',3.5*k);circle(c,x,y,Math.max(2,r*.11),'#ff8658','#fff7de')
  c.restore()
 }
+function controlBounds(L){return {left:Math.min(L.left,Math.max(L.power.x,(L.w-650)/2)),right:Math.max(L.right,Math.min(L.fine.x+L.fine.w,(L.w+650)/2))}}
 function spinDock(c,g,L){
  if(!g.spinOpen||g.panel||!g.ready||g.placing||g.complete)return
- const w=238,h=174,x=Math.max(12,L.right-w),y=L.h-55-h
+ const w=238,h=174,x=Math.max(12,controlBounds(L).right-w),y=L.h-55-h
  rr(c,x,y,w,h,13,'#081b2af5','#638a9e')
  g.hits.push({id:'spinDock',x,y,w,h})
  text(c,'击球点 · 杆头视角',x+14,y+18,12,'#e7f7ff','left',600)
@@ -690,7 +2325,13 @@ function spinDock(c,g,L){
 function chrome(c,g,L){
  const {w,h,power:p,fine:f}=L
  g.hits=[]
- if(g.match){
+ if(g.challenge){
+  const l=g.challenge.level,ch=Challenge.chapters[l.chapter]
+  text(c,'挑战 / '+String(l.id).padStart(2,'0')+' · '+l.name,w/2,17,14,'#effaff','center',700)
+  text(c,ch.name,L.left,18,11,ch.color,'left',600)
+  text(c,'剩余 '+Math.max(0,l.limit-g.shots)+' 杆',L.right,18,11,'#ffdea2','right',600)
+  text(c,Challenge.objective(l),w/2,37,10,'#a7c8d5','center')
+ }else if(g.match){
   for(let i=0;i<2;i++){
    const x=i===0?L.left:L.right-140,active=g.match.turn===i&&!g.complete,accent=i===0?'#64e5ff':'#c294ff'
    rr(c,x,5,140,40,9,active?'#173347':'#0d1b2a',active?accent:'#2a3b50')
@@ -733,21 +2374,22 @@ function chrome(c,g,L){
  }
  c.restore();line(c,f.x+3,f.y+f.h/2,f.x+f.w-3,f.y+f.h/2,'#edcf83',2)
  g.hits.push({id:'fine',...f});c.restore()
- const y=h-43
- button(c,g,'menu','球局',L.left,y,49,29)
- button(c,g,'help','玩法',L.left+56,y,49,29)
- button(c,g,'undo',g.match?'规则':'撤杆',L.left+112,y,49,29)
- button(c,g,'cues','球杆',L.left+168,y,49,29)
- const spinX=L.right-210
+ const y=h-43,controls=controlBounds(L)
+ button(c,g,'menu','球局',controls.left,y,49,29)
+ button(c,g,g.challenge?'challengeGoal':'help',g.challenge?'目标':'玩法',controls.left+56,y,49,29)
+ button(c,g,'undo',g.challenge?'重试':g.match?'规则':'撤杆',controls.left+112,y,49,29)
+ button(c,g,'cues','球杆',controls.left+168,y,49,29)
+ const spinX=controls.right-210
  rr(c,spinX,y-5,112,35,8,'#172634','#476576')
  spinFront(c,g,spinX+20,y+12,13)
  text(c,g.spinLabel(),spinX+39,y+7,g.spinLabel().length>7?8:10,'#ffdbaf')
  text(c,'点击调整杆法',spinX+39,y+21,7,'#8aaebb')
  g.hits.push({id:'spin',x:spinX,y:y-5,w:112,h:35})
- button(c,g,'sound',g.sound?'声音 开':'声音 关',L.right-91,y,66,29)
+ button(c,g,'sound',g.sound?'声音 开':'声音 关',controls.right-91,y,66,29)
  const msg=g.placing?(g.placementKind==='break'?'开球：在线后拖白球，松手摆好 · 也可直接选杆法或拉杆':'自由球：拖到空位，松手摆好'):g.drag&&g.drag.kind==='power'?(g.drag.precision?'精调 ×0.15 · 松手出杆':'当前力度预演 · 向右移慢调 · 拉回取消'):g.status
  text(c,msg,w/2,h-51,9,g.ready?'#b3c7cd':'#e6cf9a','center')
- if(g.canPlace&&g.ready&&!g.complete)text(c,'拖白球摆位',(L.left+217+L.right-210)/2,y+14,9,'#96d8c8','center')
+ const gap=controls.right-210-(controls.left+217)
+ if(gap>=80)button(c,g,'challenges',g.challenge?'关卡地图':'挑战 50关',controls.left+217+(gap-76)/2,y,76,29,!!g.challenge)
  if(g.toast&&g.now<g.toastUntil){
    const ww=Math.min(w-50,g.toast.length*10+28)
    rr(c,w/2-ww/2,51,ww,31,15,'#0a1b22ec','#749180')
@@ -757,6 +2399,7 @@ function chrome(c,g,L){
 function modal(c,g,L){
  const {w,h}=L,kind=g.panel
  if(!kind)return
+ if(['challenges','challengeIntro','challengeResult'].includes(kind)){challengeModal(c,g,L,kind);return}
  c.fillStyle='#020912c9';c.fillRect(0,0,w,h)
  const mw=Math.min(w-40,510),mh=Math.min(h-30,322),x=(w-mw)/2,y=(h-mh)/2
  rr(c,x,y,mw,mh,18,'#142330','#3c5860')
@@ -772,7 +2415,7 @@ function modal(c,g,L){
      text(c,title,xx+14,yy+23,14,'#e6d5af','left',600);text(c,sub,xx+14,yy+47,10,'#9bb9c6')
      g.hits.push({id:'scene:'+id,x:xx,y:yy,w:ww,h:69})
    })
-   text(c,g.best?'清台纪录  '+g.best+' 杆':'每一杆，都更靠近一点',x+25,y+mh-27,11,'#8faab6')
+   button(c,g,'challenges','挑战之路 · 50 关 / 五大章节',x+25,y+mh-49,mw-50,32,true)
  }else if(kind==='help'){
    text(c,'三步，上手',x+25,y+31,20,'#eee2c4','left',600)
    const rows=[['01  瞄准','拖白球松手摆好；点球台瞄准，右侧微调。'],['02  拉杆','下拉蓄力，右移进入慢速精调，松手出杆。'],['03  控球','点底部白球，拖红点松手即用；黑八先指定袋口。']]
@@ -818,6 +2461,55 @@ function modal(c,g,L){
 
  }
 }
+
+function challengeModal(c,g,L,kind){
+ const {w,h}=L,mw=Math.min(w-32,580),mh=Math.min(h-22,350),x=(w-mw)/2,y=(h-mh)/2
+ c.fillStyle='#020912d9';c.fillRect(0,0,w,h);rr(c,x,y,mw,mh,17,'#0d2031','#53768a');g.hits=[]
+ button(c,g,'close','×',x+mw-39,y+12,26,26)
+ const progress=g.challengeProgress||Challenge.sanitize(null),stats=Challenge.stats(progress)
+ if(kind==='challenges'){
+  text(c,'挑战之路',x+22,y+26,21,'#edfaff','left',700)
+  text(c,stats.cleared+'/50 关  ·  '+stats.stars+'/150 星',x+mw-53,y+26,10,'#efcd87','right',600)
+  const chapter=Math.max(0,Math.min(4,g.challengeChapter||0)),ch=Challenge.chapters[chapter],tabW=(mw-44-24)/5
+  Challenge.chapters.forEach((ch,i)=>button(c,g,'chapter:'+i,(i+1)+' '+ch.name,x+22+i*(tabW+6),y+52,tabW,29,i===chapter))
+  text(c,ch.sub,x+22,y+99,11,ch.color)
+  const cellW=(mw-44-28)/5,gridY=y+119,cellH=Math.min(68,(mh-176)/2)
+  for(let j=0;j<10;j++){
+   const id=chapter*10+j+1,l=Challenge.get(id),record=progress.records[id],locked=id>stats.unlocked,xx=x+22+(j%5)*(cellW+7),yy=gridY+Math.floor(j/5)*(cellH+8)
+   rr(c,xx,yy,cellW,cellH,9,locked?'#0a1826':record?'#163337':'#18364a',locked?'#23394a':record?'#518276':ch.color)
+   text(c,String(id).padStart(2,'0'),xx+11,yy+16,16,locked?'#536b80':'#e9faff','left',700)
+   text(c,locked?'未解锁':record?'★'.repeat(record.stars)+'☆'.repeat(3-record.stars):'待挑战',xx+cellW-8,yy+16,8,locked?'#536b80':'#f4cf83','right')
+   text(c,l.name,xx+cellW/2,yy+39,10,locked?'#50697b':'#b6d7df','center')
+   if(cellH>60&&record)text(c,'最佳 '+record.shots+' 杆',xx+cellW/2,yy+55,8,'#8ebeb5','center')
+   g.hits.push({id:'level:'+id,x:xx,y:yy,w:cellW,h:cellH})
+  }
+  text(c,g.challengeNotice||'逐关解锁 · 已过关可重玩刷星 · 自动保存本机进度',x+22,y+mh-21,10,g.challengeNotice?'#ffb89d':'#83a7ba')
+ }else{
+  const state=g.challenge,l=state.level,ch=Challenge.chapters[l.chapter],result=state.result
+  text(c,'LEVEL '+String(l.id).padStart(2,'0')+' / 50  ·  '+ch.name,x+24,y+27,11,ch.color,'left',600)
+  if(kind==='challengeIntro'){
+   text(c,l.name,w/2,y+76,27,'#edfaff','center',700)
+   text(c,Challenge.objective(l),w/2,y+117,12,'#f0d29c','center',600)
+   text(c,'最多 '+l.limit+' 杆  ·  '+l.par+' 杆内三星  ·  白球落袋即失败',w/2,y+148,11,'#99b6c7','center')
+   // Two lines keep each hint legible on small landscape screens.
+   const tip=l.tip;let lines=tip.length>34?[tip.slice(0,34),tip.slice(34)]:[tip]
+   lines.forEach((t,i)=>text(c,t,w/2,y+187+i*20,11,'#a9d5d3','center'))
+   text(c,'固定球位挑战 · 可瞄准、加塞和微调 · 不可自由摆球',w/2,y+mh-78,10,'#7698ab','center')
+   button(c,g,'challengeGo',g.shots?'继续挑战':'开始挑战',w/2-84,y+mh-59,168,37,true)
+  }else{
+   text(c,result.won?(l.id===50?'50 关 · 全部通关':'挑战成功'):'再试一次',w/2,y+72,27,result.won?'#9ff5d1':'#ffc1a4','center',700)
+   text(c,result.won?'★'.repeat(result.stars)+'☆'.repeat(3-result.stars):'☆ ☆ ☆',w/2,y+116,34,result.won?'#ffd27e':'#536e82','center')
+   text(c,result.reason,w/2,y+158,12,'#bdd4df','center')
+   text(c,'本次 '+g.shots+' 杆  ·  三星目标 '+l.par+' 杆',w/2,y+186,11,'#8cabbf','center')
+   text(c,result.won?(g.challengeSaveFailed?'浏览器存储不可用，本次进度只在当前页面保留':l.id===50?'你已完成挑战之路，可以回看关卡继续刷星。':'第 '+(l.id+1)+' 关已解锁 · 成绩已保存到本机'):'调整瞄准、力度或杆法，无限次重试。',w/2,y+218,11,ch.color,'center')
+   const bw=(mw-64)/3,yy=y+mh-61
+   button(c,g,'challenges','关卡地图',x+22,yy,bw,37)
+   button(c,g,'challengeRetry','再挑战一次',x+32+bw,yy,bw,37,!result.won)
+   button(c,g,result.won&&l.id<50?'challengeNext':'challenges',result.won&&l.id<50?'下一关 →':'查看进度',x+42+bw*2,yy,bw,37,result.won)
+  }
+ }
+}
+
 function background(c,g,L){
  const bg=c.createRadialGradient(L.w*.5,L.h*.45,20,L.w*.5,L.h*.45,L.w*.7)
  bg.addColorStop(0,'#173047');bg.addColorStop(.55,'#0b1627');bg.addColorStop(1,'#030710');c.fillStyle=bg;c.fillRect(0,0,L.w,L.h)
@@ -860,6 +2552,7 @@ const P=require('physics')
 const R=require('render')
 const Rules=require('rules')
 const Audio=require('audio')
+const Challenge=require('challenge')
 const clone=v=>JSON.parse(JSON.stringify(v))
 function fresh(n,x,y){return {n,x,y,vx:0,vy:0,z:0,vz:0,side:0,top:0,bend:0,age:0,dead:false}}
 Page({
@@ -881,6 +2574,8 @@ Page({
    this.g={now:Date.now(),sound:true,assist:true,spinX:0,spinY:0,special:'normal',best:0,cueStyle:0,panel:null,previewPath:null}
    this.g.spinLabel=()=>this.spinLabel()
    try{this.g.best=wx.getStorageSync('poolBest')||0;const opts=wx.getStorageSync('poolOptions');if(opts){this.g.sound=opts.sound;this.g.assist=opts.assist;this.g.cueStyle=opts.cueStyle||0}}catch(e){}
+   this.g.challengeProgress=Challenge.sanitize(null)
+   try{this.g.challengeProgress=Challenge.sanitize(wx.getStorageSync('poolChallengeV1'))}catch(e){}
    if(this.audio)this.audio.destroy()
    this.audio=Audio.create(()=>wx.createInnerAudioContext())
    this.reset('rack')
@@ -909,6 +2604,7 @@ Page({
  reset(scene){
   const g=this.g
   if(this.audio)this.audio.stop()
+  g.challenge=null;g.challengeProgress=g.challengeProgress||Challenge.sanitize(null)
   g.scenario=scene;g.balls=(scene==='rack'||scene==='practice')?P.rack(false):
    scene==='line'?[fresh(0,90,126),fresh(1,250,48)]:
    scene==='spin'?[fresh(0,90,92),fresh(1,153,92),fresh(3,282,43),fresh(8,275,146)]:
@@ -920,6 +2616,23 @@ Page({
   g.status=g.match?'玩家 1 开球 · 开球不分组':'拖球台瞄准 · 左侧下拉出杆'
   if(this.isOpening())this.beginPlacement('break')
   this.preview()
+ },
+ startChallenge(id,intro=true){
+  const g=this.g,level=Challenge.get(id)
+  if(!level||!g.ready)return
+  if(id>Challenge.unlocked(g.challengeProgress)){g.challengeNotice='先完成第 '+Challenge.unlocked(g.challengeProgress)+' 关，再解锁后续';return}
+  this.reset('challenge');g.challenge=Challenge.create(id);g.balls=level.balls.map(Challenge.fresh)
+  const target=g.balls[1];g.angle=Math.atan2(target.y-g.balls[0].y,target.x-g.balls[0].x)
+  g.challengeChapter=level.chapter;g.challengeNotice='';g.challengeSaveFailed=false;g.status=Challenge.objective(level)
+  g.panel=intro?'challengeIntro':null;this.preview(true)
+ },
+ finishChallenge(){
+  const g=this.g,state=g.challenge,result=Challenge.finish(state,g.balls,g.shots)
+  if(result){
+   state.result=result;g.complete=true;g.panel='challengeResult';g.status=result.reason
+   if(result.won){g.challengeProgress=Challenge.save(g.challengeProgress,state.level.id,result,g.shots);try{wx.setStorageSync('poolChallengeV1',g.challengeProgress)}catch(e){g.challengeSaveFailed=true;this.notify('本次成绩暂时无法保存')}}
+  }else g.status='下一颗：'+state.level.order[state.index]+' 号球 · 剩余 '+(state.level.limit-g.shots)+' 杆'
+  this.resetSpin();this.preview()
  },
  isOpening(){const g=this.g;return g.shots===0&&!!(g.match?g.match.breaking:g.scenario==='practice')},
  beginPlacement(kind){
@@ -961,6 +2674,7 @@ Page({
    while(g.lag>=.25){
     const events=P.step(g.balls,.25,null,e=>{
      if(g.match&&g.shot)Rules.record(g.shot,e)
+     if(g.challenge)Challenge.record(g.challenge,e)
      if(e.type==='contact')soundFrame.hit=Math.max(soundFrame.hit,e.speed/12)
      if(e.type==='rail'){
       soundFrame.rail=Math.max(soundFrame.rail,e.speed/16)
@@ -970,7 +2684,7 @@ Page({
     for(const n of events){
      const b=g.balls.find(t=>t.n===n)
      g.falls.push({n,x:b.x,y:b.y,at:now});this.play('pocket',.68)
-     if(n===0){g.scratch=true;this.notify('白球落袋 · 停稳后可自由摆位')}
+     if(n===0){g.scratch=true;this.notify(g.challenge?'白球落袋 · 本次挑战失败':'白球落袋 · 停稳后可自由摆位')}
      else{g.shotPotted.push(n);g.effects.push({x:b.x,y:b.y,at:now});this.notify(n+' 号球进袋')}
     }
     g.lag-=.25
@@ -988,6 +2702,7 @@ Page({
   const g=this.g
   if(!g.ready||g.placing||g.complete||g.power<.5)return
   if(g.match&&!g.match.breaking&&g.match.groups[g.match.turn]&&!Rules.remaining(g.balls,g.match.groups[g.match.turn]).length&&g.calledPocket===null){this.notify('打黑八前，先点一个袋口指定目标');return}
+  if(g.challenge)Challenge.start(g.challenge)
   g.shot=g.match?Rules.start(g.match,g.balls,g.calledPocket):null
   g.snapshot={balls:clone(g.balls),sunk:g.sunk,shots:g.shots,fouls:g.fouls,potted:g.potted.slice(),angle:g.angle,canPlace:g.canPlace}
   g.strikeOrigin={x:g.balls[0].x,y:g.balls[0].y,angle:g.angle,spinX:g.spinX,spinY:g.spinY,special:g.special};g.lastPower=g.power;g.shotPower=g.power;g.strikeUntil=Date.now()+110;g.shotPotted=[];g.scratch=false;g.lag=0
@@ -998,6 +2713,7 @@ Page({
  finish(){
   const g=this.g
   g.ready=true;g.sunk+=g.shotPotted.length;g.potted.push(...g.shotPotted);g.drag=null
+  if(g.challenge){this.finishChallenge();return}
   if(g.match){
    const result=Rules.resolve(g.match,g.shot)
    if(result.respotEight){P.spot(g.balls,8);g.potted=g.potted.filter(n=>n!==8);g.sunk=g.potted.length}
@@ -1114,7 +2830,17 @@ Page({
  },
  action(id){
   const g=this.g
-  if(id==='close'){g.panel=g.complete?'menu':null;g.spinOpen=false;return}
+  if(id==='close'){g.panel=g.complete?(g.challenge?'challenges':'menu'):null;g.spinOpen=false;return}
+  if(id==='challenges'){
+   if(!g.ready){this.notify('球停稳后可选择关卡');return}
+   g.challengeChapter=g.challenge?g.challenge.level.chapter:Math.floor((Challenge.unlocked(g.challengeProgress)-1)/10);g.challengeNotice='';g.panel='challenges';g.spinOpen=false;return
+  }
+  if(id.startsWith('chapter:')){const n=Number(id.slice(8));if(Number.isInteger(n)&&n>=0&&n<5){g.challengeChapter=n;g.challengeNotice=''}return}
+  if(id.startsWith('level:')){this.startChallenge(Number(id.slice(6)));return}
+  if(id==='challengeGo'){if(g.challenge&&!g.complete)g.panel=null;return}
+  if(id==='challengeRetry'){if(g.challenge)this.startChallenge(g.challenge.level.id,false);return}
+  if(id==='challengeNext'){if(g.challenge&&g.challenge.result&&g.challenge.result.won&&g.challenge.level.id<50)this.startChallenge(g.challenge.level.id+1);return}
+  if(id==='challengeGoal'){if(g.challenge)g.panel=g.complete?'challengeResult':'challengeIntro';return}
   if(id==='sound'){g.sound=!g.sound;if(!g.sound&&this.audio)this.audio.stop();this.saveOptions();return}
   if(id==='assist'){g.assist=!g.assist;this.saveOptions();return}
   if(id==='help'){g.panel='help';return}
@@ -1131,6 +2857,7 @@ Page({
    this.reset(id.slice(6));return
   }
   if(id==='undo'){
+   if(g.challenge){if(g.ready)this.startChallenge(g.challenge.level.id,false);return}
    if(g.match){g.panel='rules';return}
    if(!g.ready){this.notify('球停稳后可以撤回上一杆');return}
    if(!g.snapshot){this.notify('出一杆之后，可以撤回重试');return}
@@ -1165,7 +2892,7 @@ canvas.requestAnimationFrame=fn=>requestAnimationFrame(fn);canvas.cancelAnimatio
 const wx={
  createSelectorQuery(){const q={in(){return q},select(){return q},fields(){return q},exec(fn){dimensions();fn([{node:canvas,width:logicalW,height:logicalH}])}};return q},
  getWindowInfo(){return {pixelRatio:devicePixelRatio||1,windowWidth:logicalW,windowHeight:logicalH,safeArea:{left:0,right:logicalW}}},
- getStorageSync(k){try{return JSON.parse(localStorage.getItem('orbit:'+k))}catch{return null}},setStorageSync(k,v){try{localStorage.setItem('orbit:'+k,JSON.stringify(v))}catch{}},
+ getStorageSync(k){try{return JSON.parse(localStorage.getItem('orbit:'+k))}catch{return null}},setStorageSync(k,v){localStorage.setItem('orbit:'+k,JSON.stringify(v))},
  createInnerAudioContext:voice,
  createOffscreenCanvas({width,height}){const c=document.createElement('canvas');c.width=width;c.height=height;return c}
 }
@@ -1182,7 +2909,9 @@ window.addEventListener('blur',()=>{if(started){cancel();page.onHide()}});window
 document.addEventListener('visibilitychange',()=>{if(!started)return;if(document.hidden){cancel();page.onHide();audioContext?.suspend()}else page.onShow()})
 let resizeFrame;window.addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{if(started)page.onResize()})})
 function notice(t){const n=document.querySelector('#notice');n.textContent=t;n.style.opacity=1;clearTimeout(notice.timer);notice.timer=setTimeout(()=>n.style.opacity=0,2800)}
-document.querySelector('#start').onclick=()=>{if(started)return;started=true;unlock();document.querySelector('#welcome').remove();page.onReady();canvas.focus()}
+function enter(challenge=false){if(started)return;started=true;unlock();document.querySelector('#welcome').remove();page.onReady();if(challenge)page.action('challenges');canvas.focus()}
+document.querySelector('#start').onclick=()=>enter()
+document.querySelector('#startChallenge').onclick=()=>enter(true)
 document.querySelector('#help').onclick=()=>{if(started)page.action('help')}
 document.querySelector('#full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else{document.body.classList.toggle('focused');page.onResize();notice('双击球台可退出沉浸模式')}}catch{notice('当前浏览器不支持全屏，可横屏游玩')}}
 document.addEventListener('fullscreenchange',()=>{document.body.classList.toggle('focused',!!document.fullscreenElement);if(started)page.onResize()})

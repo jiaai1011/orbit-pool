@@ -10,7 +10,7 @@ canvas.requestAnimationFrame=fn=>requestAnimationFrame(fn);canvas.cancelAnimatio
 const wx={
  createSelectorQuery(){const q={in(){return q},select(){return q},fields(){return q},exec(fn){dimensions();fn([{node:canvas,width:logicalW,height:logicalH}])}};return q},
  getWindowInfo(){return {pixelRatio:devicePixelRatio||1,windowWidth:logicalW,windowHeight:logicalH,safeArea:{left:0,right:logicalW}}},
- getStorageSync(k){try{return JSON.parse(localStorage.getItem('orbit:'+k))}catch{return null}},setStorageSync(k,v){try{localStorage.setItem('orbit:'+k,JSON.stringify(v))}catch{}},
+ getStorageSync(k){try{return JSON.parse(localStorage.getItem('orbit:'+k))}catch{return null}},setStorageSync(k,v){localStorage.setItem('orbit:'+k,JSON.stringify(v))},
  createInnerAudioContext:voice,
  createOffscreenCanvas({width,height}){const c=document.createElement('canvas');c.width=width;c.height=height;return c}
 }
@@ -27,7 +27,9 @@ window.addEventListener('blur',()=>{if(started){cancel();page.onHide()}});window
 document.addEventListener('visibilitychange',()=>{if(!started)return;if(document.hidden){cancel();page.onHide();audioContext?.suspend()}else page.onShow()})
 let resizeFrame;window.addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{if(started)page.onResize()})})
 function notice(t){const n=document.querySelector('#notice');n.textContent=t;n.style.opacity=1;clearTimeout(notice.timer);notice.timer=setTimeout(()=>n.style.opacity=0,2800)}
-document.querySelector('#start').onclick=()=>{if(started)return;started=true;unlock();document.querySelector('#welcome').remove();page.onReady();canvas.focus()}
+function enter(challenge=false){if(started)return;started=true;unlock();document.querySelector('#welcome').remove();page.onReady();if(challenge)page.action('challenges');canvas.focus()}
+document.querySelector('#start').onclick=()=>enter()
+document.querySelector('#startChallenge').onclick=()=>enter(true)
 document.querySelector('#help').onclick=()=>{if(started)page.action('help')}
 document.querySelector('#full').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else{document.body.classList.toggle('focused');page.onResize();notice('双击球台可退出沉浸模式')}}catch{notice('当前浏览器不支持全屏，可横屏游玩')}}
 document.addEventListener('fullscreenchange',()=>{document.body.classList.toggle('focused',!!document.fullscreenElement);if(started)page.onResize()})

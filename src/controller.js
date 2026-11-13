@@ -2,6 +2,7 @@ const P=require('../../physics')
 const R=require('./render')
 const Rules=require('../../rules')
 const Audio=require('../../audio')
+const Challenge=require('../../challenge')
 const clone=v=>JSON.parse(JSON.stringify(v))
 function fresh(n,x,y){return {n,x,y,vx:0,vy:0,z:0,vz:0,side:0,top:0,bend:0,age:0,dead:false}}
 Page({
@@ -23,6 +24,8 @@ Page({
    this.g={now:Date.now(),sound:true,assist:true,spinX:0,spinY:0,special:'normal',best:0,cueStyle:0,panel:null,previewPath:null}
    this.g.spinLabel=()=>this.spinLabel()
    try{this.g.best=wx.getStorageSync('poolBest')||0;const opts=wx.getStorageSync('poolOptions');if(opts){this.g.sound=opts.sound;this.g.assist=opts.assist;this.g.cueStyle=opts.cueStyle||0}}catch(e){}
+   this.g.challengeProgress=Challenge.sanitize(null)
+   try{this.g.challengeProgress=Challenge.sanitize(wx.getStorageSync('poolChallengeV1'))}catch(e){}
    if(this.audio)this.audio.destroy()
    this.audio=Audio.create(()=>wx.createInnerAudioContext())
    this.reset('rack')
@@ -51,6 +54,7 @@ Page({
  reset(scene){
   const g=this.g
   if(this.audio)this.audio.stop()
+  g.challenge=null;g.challengeProgress=g.challengeProgress||Challenge.sanitize(null)
   g.scenario=scene;g.balls=(scene==='rack'||scene==='practice')?P.rack(false):
    scene==='line'?[fresh(0,90,126),fresh(1,250,48)]:
    scene==='spin'?[fresh(0,90,92),fresh(1,153,92),fresh(3,282,43),fresh(8,275,146)]:
@@ -62,6 +66,23 @@ Page({
   g.status=g.match?'玩家 1 开球 · 开球不分组':'拖球台瞄准 · 左侧下拉出杆'
   if(this.isOpening())this.beginPlacement('break')
   this.preview()
+ },
+ startChallenge(id,intro=true){
+  const g=this.g,level=Challenge.get(id)
+  if(!level||!g.ready)return
+  if(id>Challenge.unlocked(g.challengeProgress)){g.challengeNotice='先完成第 '+Challenge.unlocked(g.challengeProgress)+' 关，再解锁后续';return}
+  this.reset('challenge');g.challenge=Challenge.create(id);g.balls=level.balls.map(Challenge.fresh)
+  const target=g.balls[1];g.angle=Math.atan2(target.y-g.balls[0].y,target.x-g.balls[0].x)
+  g.challengeChapter=level.chapter;g.challengeNotice='';g.challengeSaveFailed=false;g.status=Challenge.objective(level)
+  g.panel=intro?'challengeIntro':null;this.preview(true)
+ },
+ finishChallenge(){
+  const g=this.g,state=g.challenge,result=Challenge.finish(state,g.balls,g.shots)
+  if(result){
+   state.result=result;g.complete=true;g.panel='challengeResult';g.status=result.reason
+   if(result.won){g.challengeProgress=Challenge.save(g.challengeProgress,state.level.id,result,g.shots);try{wx.setStorageSync('poolChallengeV1',g.challengeProgress)}catch(e){g.challengeSaveFailed=true;this.notify('本次成绩暂时无法保存')}}
+  }else g.status='下一颗：'+state.level.order[state.index]+' 号球 · 剩余 '+(state.level.limit-g.shots)+' 杆'
+  this.resetSpin();this.preview()
  },
  isOpening(){const g=this.g;return g.shots===0&&!!(g.match?g.match.breaking:g.scenario==='practice')},
  beginPlacement(kind){
@@ -103,6 +124,7 @@ Page({
    while(g.lag>=.25){
     const events=P.step(g.balls,.25,null,e=>{
      if(g.match&&g.shot)Rules.record(g.shot,e)
+     if(g.challenge)Challenge.record(g.challenge,e)
      if(e.type==='contact')soundFrame.hit=Math.max(soundFrame.hit,e.speed/12)
      if(e.type==='rail'){
       soundFrame.rail=Math.max(soundFrame.rail,e.speed/16)
@@ -112,7 +134,7 @@ Page({
     for(const n of events){
      const b=g.balls.find(t=>t.n===n)
      g.falls.push({n,x:b.x,y:b.y,at:now});this.play('pocket',.68)
-     if(n===0){g.scratch=true;this.notify('白球落袋 · 停稳后可自由摆位')}
+     if(n===0){g.scratch=true;this.notify(g.challenge?'白球落袋 · 本次挑战失败':'白球落袋 · 停稳后可自由摆位')}
      else{g.shotPotted.push(n);g.effects.push({x:b.x,y:b.y,at:now});this.notify(n+' 号球进袋')}
     }
     g.lag-=.25
@@ -130,6 +152,7 @@ Page({
   const g=this.g
   if(!g.ready||g.placing||g.complete||g.power<.5)return
   if(g.match&&!g.match.breaking&&g.match.groups[g.match.turn]&&!Rules.remaining(g.balls,g.match.groups[g.match.turn]).length&&g.calledPocket===null){this.notify('打黑八前，先点一个袋口指定目标');return}
+  if(g.challenge)Challenge.start(g.challenge)
   g.shot=g.match?Rules.start(g.match,g.balls,g.calledPocket):null
   g.snapshot={balls:clone(g.balls),sunk:g.sunk,shots:g.shots,fouls:g.fouls,potted:g.potted.slice(),angle:g.angle,canPlace:g.canPlace}
   g.strikeOrigin={x:g.balls[0].x,y:g.balls[0].y,angle:g.angle,spinX:g.spinX,spinY:g.spinY,special:g.special};g.lastPower=g.power;g.shotPower=g.power;g.strikeUntil=Date.now()+110;g.shotPotted=[];g.scratch=false;g.lag=0
@@ -140,6 +163,7 @@ Page({
  finish(){
   const g=this.g
   g.ready=true;g.sunk+=g.shotPotted.length;g.potted.push(...g.shotPotted);g.drag=null
+  if(g.challenge){this.finishChallenge();return}
   if(g.match){
    const result=Rules.resolve(g.match,g.shot)
    if(result.respotEight){P.spot(g.balls,8);g.potted=g.potted.filter(n=>n!==8);g.sunk=g.potted.length}
@@ -256,7 +280,17 @@ Page({
  },
  action(id){
   const g=this.g
-  if(id==='close'){g.panel=g.complete?'menu':null;g.spinOpen=false;return}
+  if(id==='close'){g.panel=g.complete?(g.challenge?'challenges':'menu'):null;g.spinOpen=false;return}
+  if(id==='challenges'){
+   if(!g.ready){this.notify('球停稳后可选择关卡');return}
+   g.challengeChapter=g.challenge?g.challenge.level.chapter:Math.floor((Challenge.unlocked(g.challengeProgress)-1)/10);g.challengeNotice='';g.panel='challenges';g.spinOpen=false;return
+  }
+  if(id.startsWith('chapter:')){const n=Number(id.slice(8));if(Number.isInteger(n)&&n>=0&&n<5){g.challengeChapter=n;g.challengeNotice=''}return}
+  if(id.startsWith('level:')){this.startChallenge(Number(id.slice(6)));return}
+  if(id==='challengeGo'){if(g.challenge&&!g.complete)g.panel=null;return}
+  if(id==='challengeRetry'){if(g.challenge)this.startChallenge(g.challenge.level.id,false);return}
+  if(id==='challengeNext'){if(g.challenge&&g.challenge.result&&g.challenge.result.won&&g.challenge.level.id<50)this.startChallenge(g.challenge.level.id+1);return}
+  if(id==='challengeGoal'){if(g.challenge)g.panel=g.complete?'challengeResult':'challengeIntro';return}
   if(id==='sound'){g.sound=!g.sound;if(!g.sound&&this.audio)this.audio.stop();this.saveOptions();return}
   if(id==='assist'){g.assist=!g.assist;this.saveOptions();return}
   if(id==='help'){g.panel='help';return}
@@ -273,6 +307,7 @@ Page({
    this.reset(id.slice(6));return
   }
   if(id==='undo'){
+   if(g.challenge){if(g.ready)this.startChallenge(g.challenge.level.id,false);return}
    if(g.match){g.panel='rules';return}
    if(!g.ready){this.notify('球停稳后可以撤回上一杆');return}
    if(!g.snapshot){this.notify('出一杆之后，可以撤回重试');return}

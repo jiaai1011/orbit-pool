@@ -85,9 +85,12 @@ const FREE_RUN_MAX=1050
 const RUN_FACTOR=12/(49*SLIDE)+25/(98*ROLL)
 function powerSpeed(p){return Math.sqrt(FREE_RUN_MAX*Math.max(0,Math.min(1,p))/RUN_FACTOR)}
 function shoot(b,a,p,m,flip=1){
-  const power=Math.max(0,Math.min(1,p)),top=Math.max(-1,Math.min(1,m.top||0))*1.8,side=Math.max(-1,Math.min(1,m.side||0))*1.2
-  // Off-centre strikes divide a fixed energy budget into translation and rotation.
-  const v=powerSpeed(power)*(m.breakShot?1+.8*power*power:1)/Math.sqrt(1+.4*(top*top+side*side))*(m.lift?.85:1)
+  const power=Math.max(0,Math.min(1,p)),tipY=Math.max(-1,Math.min(1,m.top||0)),tipX=Math.max(-1,Math.min(1,m.side||0))
+  const top=tipY*1.6,side=tipX*1.2
+  // Power is calibrated to launch speed, not a fixed total kinetic-energy budget.
+  // The old energy split removed 34% of draw speed before cloth drag even began.
+  // Allow a small off-centre loss; cloth friction alone then wears off backspin.
+  const v=powerSpeed(power)*(m.breakShot?1+.8*power*power:1)*(1-.08*Math.min(1,tipY*tipY+tipX*tipX))*(m.lift?.85:1)
   b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;b.ax=Math.cos(a);b.ay=Math.sin(a)
   b.rx=b.ax*v*top;b.ry=b.ay*v*top;b.wz=side*v
   b.side=m.side||0;b.bend=(m.bend||0)*flip;b.age=0;b.z=0
