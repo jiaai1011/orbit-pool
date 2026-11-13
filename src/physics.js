@@ -93,6 +93,7 @@ function shoot(b,a,p,m,flip=1){
   const v=powerSpeed(power)*(m.breakShot?1+.8*power*power:1)*(1-.08*Math.min(1,tipY*tipY+tipX*tipX))*(m.lift?.85:1)
   b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;b.ax=Math.cos(a);b.ay=Math.sin(a)
   b.rx=b.ax*v*top;b.ry=b.ay*v*top;b.wz=side*v
+  b.drawApproach=b.n===0&&tipY<0&&!m.lift&&!m.bend
   b.side=m.side||0;b.bend=(m.bend||0)*flip;b.age=0;b.z=0
   b.vz=m.lift&&power>0?1.8+power*.3:0
 }
@@ -102,7 +103,12 @@ function friction(b,dt){
   const dx=b.vx-b.rx,dy=b.vy-b.ry,slip=Math.hypot(dx,dy)
   let left=dt
   if(slip>1e-8){
-    const sliding=Math.min(dt,slip/(3.5*SLIDE)),j=SLIDE*sliding,x=dx/slip*j,y=dy/slip*j
+    // A game-feel assist for a level draw stroke: gentler drag on the approach,
+    // then full cloth coupling after the first object-ball or cushion impact.
+    // Scale continuously as backspin wears away; never add a reverse impulse.
+    const speed=Math.hypot(b.vx,b.vy),back=speed>1e-8?Math.max(0,-(b.rx*b.vx+b.ry*b.vy)/(speed*speed)):0
+    const drag=SLIDE*(b.drawApproach?1-.72*Math.min(1,back/.3):1)
+    const sliding=Math.min(dt,slip/(3.5*drag)),j=drag*sliding,x=dx/slip*j,y=dy/slip*j
     b.vx-=x;b.vy-=y;b.rx+=2.5*x;b.ry+=2.5*y;left-=sliding
   }
   if(left>1e-9){
@@ -130,6 +136,7 @@ function entryTime(x,y,vx,vy,r,limit){
 }
 function rail(b,nx,ny){
   const vn=b.vx*nx+b.vy*ny;if(vn>=0)return 0
+  b.drawApproach=false
   const speed=-vn,tx=ny,ty=-nx,jn=-(1+RAIL_RESTITUTION)*vn
   b.vx+=jn*nx;b.vy+=jn*ny
   // Effective rolling-spin reflection: preserves the slip ratio, cannot add energy.
@@ -173,6 +180,7 @@ function collideBatch(bs,onContact,onEvent){
     const sep=(Math.max(0,2*R-q.d)+1e-7)*.5
     a.x-=nx*sep;a.y-=ny*sep;b.x+=nx*sep;b.y+=ny*sep
     if(j>1e-8){
+      a.drawApproach=b.drawApproach=false
       if(onEvent)onEvent({type:'contact',a:a.n,b:b.n,x:(a.x+b.x)/2,y:(a.y+b.y)/2,speed:v})
       if(onContact)onContact((a.x+b.x)/2,(a.y+b.y)/2,v)
     }
@@ -200,6 +208,7 @@ function softContacts(bs,dt,onContact,onEvent,pots){
       const impulse=Math.max(0,3000*(2*R-d)+v)*h
       dxs[i]-=impulse*nx;dys[i]-=impulse*ny;dxs[j]+=impulse*nx;dys[j]+=impulse*ny
       const key=i*n+j
+      if(impulse>1e-8)a.drawApproach=b.drawApproach=false
       if(v>1e-5&&!reported[key]){
         reported[key]=1
         if(onEvent)onEvent({type:'contact',a:a.n,b:b.n,x:(a.x+b.x)/2,y:(a.y+b.y)/2,speed:v})
